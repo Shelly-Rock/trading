@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradingView Chart - BTCUSD & XAUUSD</title>
+    <script src="lightweight-charts.standalone.production.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="logo">TradingView Chart</h1>
+            </div>
+            <div class="header-center">
+                <div class="symbol-selector">
+                    <button id="btnBTC" class="symbol-tab active" data-symbol="BTCUSD">
+                        <span class="symbol-icon">₿</span>
+                        <span>BTC/USD</span>
+                    </button>
+                    <button id="btnXAU" class="symbol-tab" data-symbol="XAUUSD">
+                        <span class="symbol-icon"> Au</span>
+                        <span>XAU/USD</span>
+                    </button>
+                </div>
+            </div>
+            <div class="header-right">
+                <span id="currentPrice" class="current-price">--</span>
+                <span id="priceChange" class="price-change">--</span>
+            </div>
+        </header>
+
+        <div class="toolbar">
+            <div class="toolbar-group">
+                <label>Chart Type:</label>
+                <select id="chartType">
+                    <option value="candlestick" selected>Candlestick</option>
+                    <option value="bar">Bar</option>
+                    <option value="line">Line</option>
+                    <option value="area">Area</option>
+                </select>
+            </div>
+            <div class="toolbar-group">
+                <label>Timeframe:</label>
+                <select id="timeframe">
+                    <option value="1m">1 Phut</option>
+                    <option value="5m">5 Phut</option>
+                    <option value="15m">15 Phut</option>
+                    <option value="1h" selected>1 Gio</option>
+                    <option value="4h">4 Gio</option>
+                    <option value="1d">1 Ngay</option>
+                    <option value="1w">1 Tuan</option>
+                </select>
+            </div>
+            <div class="toolbar-group">
+                <label>Indicators:</label>
+                <button id="toggleVolume" class="btn btn-secondary active">Volume</button>
+                <button id="toggleMA" class="btn btn-secondary">MA 20</button>
+            </div>
+            <div class="toolbar-group indicators-list" id="activeIndicators"></div>
+        </div>
+
+        <div class="main-content">
+            <div class="chart-container">
+                <div id="chart" class="chart"></div>
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Dang tai du lieu...</p>
+                </div>
+            </div>
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3>MA Settings</h3>
+                    <div class="ma-settings">
+                        <div class="ma-input-group">
+                            <label>MA Period:</label>
+                            <input type="number" id="maPeriod" value="20" min="1" max="200">
+                        </div>
+                        <div class="ma-input-group">
+                            <label>MA Color:</label>
+                            <input type="color" id="maColor" value="#f7931a">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <span>BTC: CoinGecko API</span>
+            <span>XAU: OANDA / Yahoo Finance</span>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
