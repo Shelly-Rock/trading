@@ -211,13 +211,15 @@ class TradingChart {
                     second: '2-digit',
                     hour12: false
                 });
-                document.getElementById('infoTime').textContent = formattedDate;
+                const infoTimeEl = document.getElementById('infoTime');
+                if (infoTimeEl) infoTimeEl.textContent = formattedDate;
             } else {
                 const priceValueEl = document.getElementById('priceValue');
                 const timeValueEl = document.getElementById('timeValue');
                 if (priceValueEl) priceValueEl.textContent = '--';
                 if (timeValueEl) timeValueEl.textContent = '--';
-                document.getElementById('infoTime').textContent = '--';
+                const infoTimeEl = document.getElementById('infoTime');
+                if (infoTimeEl) infoTimeEl.textContent = '--';
             }
         });
     }
@@ -237,10 +239,16 @@ class TradingChart {
             
             const candleData = param.seriesData.get(this.candleSeries);
             if (candleData) {
-                document.getElementById('infoOpen').textContent = candleData.open?.toFixed(2) || '--';
-                document.getElementById('infoHigh').textContent = candleData.high?.toFixed(2) || '--';
-                document.getElementById('infoLow').textContent = candleData.low?.toFixed(2) || '--';
-                document.getElementById('infoClose').textContent = candleData.close?.toFixed(2) || '--';
+                const infoOpenEl = document.getElementById('infoOpen');
+                const infoHighEl = document.getElementById('infoHigh');
+                const infoLowEl = document.getElementById('infoLow');
+                const infoCloseEl = document.getElementById('infoClose');
+                const infoTimeEl = document.getElementById('infoTime');
+                
+                if (infoOpenEl) infoOpenEl.textContent = candleData.open?.toFixed(2) || '--';
+                if (infoHighEl) infoHighEl.textContent = candleData.high?.toFixed(2) || '--';
+                if (infoLowEl) infoLowEl.textContent = candleData.low?.toFixed(2) || '--';
+                if (infoCloseEl) infoCloseEl.textContent = candleData.close?.toFixed(2) || '--';
                 
                 const date = new Date(param.time * 1000);
                 const formattedDate = date.toLocaleString('en-US', {
@@ -252,7 +260,7 @@ class TradingChart {
                     second: '2-digit',
                     hour12: false
                 });
-                document.getElementById('infoTime').textContent = formattedDate;
+                if (infoTimeEl) infoTimeEl.textContent = formattedDate;
             }
         });
     }
@@ -265,16 +273,6 @@ class TradingChart {
         document.getElementById('timeframe').addEventListener('change', e => this.changeTimeframe(e.target.value));
         document.getElementById('toggleVolume').addEventListener('click', () => this.toggleVolume());
         document.getElementById('toggleMA').addEventListener('click', () => this.toggleMA());
-        
-        document.getElementById('maPeriod').addEventListener('change', e => {
-            this.maPeriod = parseInt(e.target.value) || 20;
-            if (this.showMA) this.updateMA();
-        });
-
-        document.getElementById('maColor').addEventListener('change', e => {
-            this.maColor = e.target.value;
-            if (this.showMA) this.updateMA();
-        });
     }
 
     switchDataSource(source) {
@@ -533,12 +531,15 @@ class TradingChart {
         this.updateMA();
         
         const exchange = this.currentSymbol === 'BTCUSD' ? 'Binance BTC' : 'Binance XAU';
-        document.getElementById('infoSymbol').textContent = this.currentSymbol;
-        document.getElementById('infoExchange').textContent = exchange;
+        const infoSymbolEl = document.getElementById('infoSymbol');
+        const infoExchangeEl = document.getElementById('infoExchange');
+        if (infoSymbolEl) infoSymbolEl.textContent = this.currentSymbol;
+        if (infoExchangeEl) infoExchangeEl.textContent = exchange;
         
         const lastCandle = data[data.length - 1];
         if (lastCandle) {
-            document.getElementById('infoVolume').textContent = this.formatVolume(lastCandle.volume);
+            const infoVolumeEl = document.getElementById('infoVolume');
+            if (infoVolumeEl) infoVolumeEl.textContent = this.formatVolume(lastCandle.volume);
         }
         
         this.chart.timeScale().fitContent();
@@ -628,10 +629,12 @@ class TradingChart {
 
         if (remaining <= 10) {
             countdownEl.classList.add('warning');
-            document.getElementById('priceTimeLabel').style.background = '#ef5350';
+            const priceTimeLabel = document.getElementById('priceTimeLabel');
+            if (priceTimeLabel) priceTimeLabel.style.background = '#ef5350';
         } else {
             countdownEl.classList.remove('warning');
-            document.getElementById('priceTimeLabel').style.background = '#2962ff';
+            const priceTimeLabel = document.getElementById('priceTimeLabel');
+            if (priceTimeLabel) priceTimeLabel.style.background = '#2962ff';
         }
 
         const progressPercent = (elapsed / tfSeconds) * 100;
@@ -656,24 +659,26 @@ class TradingChart {
 
         const price = lastCandle.close;
         const priceStr = price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        livePriceValue.textContent = priceStr;
+        if (livePriceValue) livePriceValue.textContent = priceStr;
 
         const now = Math.floor(Date.now() / 1000);
         const tfSeconds = this.getTimeframeSeconds();
         const remaining = this.currentCandleEndTime - now;
 
         if (remaining <= 0) {
-            liveCountdown.textContent = '00:00';
+            if (liveCountdown) liveCountdown.textContent = '00:00';
             livePriceLabel.style.background = '#ef5350';
         } else {
             const hours = Math.floor(remaining / 3600);
             const minutes = Math.floor((remaining % 3600) / 60);
             const seconds = remaining % 60;
 
-            if (hours > 0) {
-                liveCountdown.textContent = `${hours}h ${minutes}m ${seconds}s`;
-            } else {
-                liveCountdown.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            if (liveCountdown) {
+                if (hours > 0) {
+                    liveCountdown.textContent = `${hours}h ${minutes}m ${seconds}s`;
+                } else {
+                    liveCountdown.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
             }
 
             if (remaining <= 10) {
