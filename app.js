@@ -6,6 +6,7 @@ class TradingChart {
         this.maSeries = null;
         this.currentSymbol = 'BTCUSD';
         this.currentTimeframe = '1h';
+        this.currentDataSource = 'binance';
         this.showVolume = true;
         this.showMA = false;
         this.maPeriod = 20;
@@ -27,7 +28,7 @@ class TradingChart {
     }
 
     setupChart() {
-        const chartContainer = document.getElementById('chart');
+        const chartContainer = document.getElementById('binanceChart');
         
         this.chart = LightweightCharts.createChart(chartContainer, {
             layout: {
@@ -91,7 +92,7 @@ class TradingChart {
     }
     
     setupTimeOverlay() {
-        const container = document.getElementById('chart');
+        const container = document.getElementById('binanceChart');
         container.style.position = 'relative';
         
         const priceTimeLabel = document.createElement('div');
@@ -259,6 +260,7 @@ class TradingChart {
     bindEvents() {
         document.getElementById('btnBTC').addEventListener('click', () => this.switchSymbol('BTCUSD'));
         document.getElementById('btnXAU').addEventListener('click', () => this.switchSymbol('XAUUSD'));
+        document.getElementById('dataSource').addEventListener('change', e => this.switchDataSource(e.target.value));
         document.getElementById('chartType').addEventListener('change', e => this.changeChartType(e.target.value));
         document.getElementById('timeframe').addEventListener('change', e => this.changeTimeframe(e.target.value));
         document.getElementById('toggleVolume').addEventListener('click', () => this.toggleVolume());
@@ -275,6 +277,45 @@ class TradingChart {
         });
     }
 
+    switchDataSource(source) {
+        this.currentDataSource = source;
+        
+        const binanceChart = document.getElementById('binanceChart');
+        const mt5Container = document.getElementById('mt5Chart');
+        const mt5Iframe = document.getElementById('mt5iframe');
+        
+        if (source === 'mt5') {
+            binanceChart.style.display = 'none';
+            mt5Container.style.display = 'block';
+            
+            const symbolMap = {
+                'BTCUSD': 'BTCUSD',
+                'XAUUSD': 'XAUUSD'
+            };
+            const tfMap = {
+                '1m': 'M1', '5m': 'M5', '15m': 'M15',
+                '1h': 'H1', '4h': 'H4', '1d': 'D1', '1w': 'W1'
+            };
+            
+            const mt5Symbol = symbolMap[this.currentSymbol] || this.currentSymbol;
+            const mt5Tf = tfMap[this.currentTimeframe] || 'H1';
+            
+            const mt5Url = `https://web.metatrader5.com/demo/account?lang=vi&symbol=${mt5Symbol}&chart_period=${mt5Tf}`;
+            mt5Iframe.src = mt5Url;
+            
+            if (this.ws) {
+                this.ws.close();
+            }
+        } else {
+            binanceChart.style.display = 'block';
+            mt5Container.style.display = 'none';
+            mt5Iframe.src = '';
+            
+            this.connectWebSocket();
+            this.loadData();
+        }
+    }
+
     startRealTimeUpdates() {
         this.connectWebSocket();
         
@@ -288,7 +329,7 @@ class TradingChart {
             this.ws.close();
         }
 
-        const symbol = this.currentSymbol === 'BTCUSD' ? 'btcusdt' : 'xauusd';
+        const symbol = this.currentSymbol === 'BTCUSD' ? 'btcusdt' : 'xauusdt';
         const interval = this.getWebSocketInterval();
         
         const wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@kline_${interval}`;
@@ -303,11 +344,13 @@ class TradingChart {
         };
         
         this.ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
+            console.warn('WebSocket error (will reconnect automatically):', error.type);
         };
         
-        this.ws.onclose = () => {
-            setTimeout(() => this.connectWebSocket(), 5000);
+        this.ws.onclose = (event) => {
+            if (!event.wasClean) {
+                setTimeout(() => this.connectWebSocket(), 5000);
+            }
         };
     }
 
@@ -353,26 +396,25 @@ class TradingChart {
     }
 
     async updateRealtimePrice() {
-        if (this.currentSymbol !== 'BTCUSD') return;
+        const symbol = this.currentSymbol === 'BTCUSD' ? 'BTCUSDT' : 'XAUUSDT';
         
         try {
-            const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT`;
-            const response = await fetch(url);
-            
+            const response = await fetch(`http://localhost:3001/api/ticker/${symbol}`);
             if (response.ok) {
                 const data = await response.json();
-                const price = parseFloat(data.lastPrice);
-                const change = parseFloat(data.priceChange);
-                const changePercent = parseFloat(data.priceChangePercent);
-                
-                document.getElementById('currentPrice').textContent = `$${price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-                
-                const priceChangeEl = document.getElementById('priceChange');
-                priceChangeEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent.toFixed(2)}%)`;
-                priceChangeEl.className = `price-change ${change >= 0 ? 'positive' : 'negative'}`;
+                if (data.lastPrice) {
+                    const price = parseFloat(data.lastPrice);
+                    const changePercent = parseFloat(data.priceChangePercent) || 0;
+                    
+                    document.getElementById('currentPrice').textContent = `$${price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                    
+                    const priceChangeEl = document.getElementById('priceChange');
+                    priceChangeEl.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
+                    priceChangeEl.className = `price-change ${changePercent >= 0 ? 'positive' : 'negative'}`;
+                }
             }
         } catch (e) {
-            console.error('Price update failed:', e);
+            console.warn('Price update failed:', e.message);
         }
     }
 
@@ -386,6 +428,7 @@ class TradingChart {
         this.currentSymbol = symbol;
         this.stopCountdown();
         this.connectWebSocket();
+        this.updateRealtimePrice();
         this.loadData();
     }
 
@@ -398,7 +441,6 @@ class TradingChart {
             this.updateHeader(data);
         } catch (error) {
             console.error('Error loading data:', error);
-            alert('Khong the tai du lieu: ' + error.message);
         } finally {
             this.showLoading(false);
         }
@@ -414,76 +456,61 @@ class TradingChart {
     }
 
     async fetchBTCData() {
-        const intervalMap = {
-            '1m': '1m', '5m': '5m', '15m': '15m',
-            '1h': '1h', '4h': '4h', '1d': '1d', '1w': '1w'
-        };
-        const interval = intervalMap[this.currentTimeframe] || '1h';
+        const interval = this.getBinanceInterval();
+        const symbol = 'BTCUSDT';
         
-        const limitMap = {
-            '1m': 500, '5m': 500, '15m': 500,
-            '1h': 500, '4h': 500, '1d': 365, '1w': 520
-        };
-        const limit = limitMap[this.currentTimeframe] || 500;
-        
-        const url = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=${limit}`;
-        
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error('Binance API failed: ' + response.status);
+        try {
+            const response = await fetch(`http://localhost:3001/api/klines/${symbol}/${interval}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    return data.map(k => ({
+                        time: Math.floor(k[0] / 1000),
+                        open: parseFloat(k[1]),
+                        high: parseFloat(k[2]),
+                        low: parseFloat(k[3]),
+                        close: parseFloat(k[4]),
+                        volume: parseFloat(k[5])
+                    })).filter(d => d.close > 0);
+                }
+            }
+        } catch (e) {
+            console.warn('BTC fetch failed:', e.message);
         }
-        
-        const data = await response.json();
-        
-        if (!Array.isArray(data) || data.length === 0) {
-            throw new Error('No BTC data returned');
-        }
-        
-        return data.map(kline => ({
-            time: Math.floor(kline[0] / 1000),
-            open: parseFloat(kline[1]),
-            high: parseFloat(kline[2]),
-            low: parseFloat(kline[3]),
-            close: parseFloat(kline[4]),
-            volume: parseFloat(kline[5]),
-        })).filter(d => d.close > 0);
+        throw new Error('No BTC data available');
     }
 
     async fetchXAUData() {
-        const intervalMap = {
+        const interval = this.getBinanceInterval();
+        const symbol = 'XAUUSDT';
+        
+        try {
+            const response = await fetch(`http://localhost:3001/api/klines/${symbol}/${interval}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    return data.map(k => ({
+                        time: Math.floor(k[0] / 1000),
+                        open: parseFloat(k[1]),
+                        high: parseFloat(k[2]),
+                        low: parseFloat(k[3]),
+                        close: parseFloat(k[4]),
+                        volume: parseFloat(k[5])
+                    })).filter(d => d.close > 0);
+                }
+            }
+        } catch (e) {
+            console.warn('XAU fetch failed:', e.message);
+        }
+        throw new Error('No gold data available');
+    }
+
+    getBinanceInterval() {
+        const map = {
             '1m': '1m', '5m': '5m', '15m': '15m',
-            '1h': '60m', '4h': '240m', '1d': '1d', '1w': '1wk'
+            '1h': '1h', '4h': '4h', '1d': '1d', '1w': '1w'
         };
-        const interval = intervalMap[this.currentTimeframe] || '60m';
-        
-        const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?interval=${interval}&range=3mo`;
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-        
-        const response = await fetch(proxyUrl);
-        
-        if (!response.ok) {
-            throw new Error('Yahoo Finance failed: ' + response.status);
-        }
-        
-        const result = await response.json();
-        const chartData = result.chart?.result?.[0];
-        
-        if (!chartData || !chartData.timestamp || chartData.timestamp.length === 0) {
-            throw new Error('No gold data found');
-        }
-        
-        const timestamps = chartData.timestamp;
-        const quotes = chartData.indicators?.quote?.[0] || {};
-        
-        return timestamps.map((ts, i) => ({
-            time: ts,
-            open: quotes.open?.[i] ?? 0,
-            high: quotes.high?.[i] ?? 0,
-            low: quotes.low?.[i] ?? 0,
-            close: quotes.close?.[i] ?? 0,
-            volume: quotes.volume?.[i] ?? 0,
-        })).filter(d => d.close > 0 && d.high >= d.low);
+        return map[this.currentTimeframe] || '1h';
     }
 
     updateChart(data) {
@@ -505,7 +532,7 @@ class TradingChart {
         
         this.updateMA();
         
-        const exchange = this.currentSymbol === 'BTCUSD' ? 'Binance' : 'OANDA/Yahoo';
+        const exchange = this.currentSymbol === 'BTCUSD' ? 'Binance BTC' : 'Binance XAU';
         document.getElementById('infoSymbol').textContent = this.currentSymbol;
         document.getElementById('infoExchange').textContent = exchange;
         
@@ -658,7 +685,7 @@ class TradingChart {
 
         const priceCoordinate = this.candleSeries.priceToCoordinate(price);
         if (priceCoordinate !== null) {
-            const chartHeight = document.getElementById('chart').clientHeight;
+            const chartHeight = document.getElementById('binanceChart').clientHeight;
             let topPos = priceCoordinate + 30;
             if (topPos > chartHeight - 50) {
                 topPos = priceCoordinate - 50;

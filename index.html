@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TradingView Chart - BTCUSD & XAUUSD</title>
+    <title>MT5 Trading Chart - BTCUSD & XAUUSD</title>
     <script src="lightweight-charts.standalone.production.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -11,7 +11,7 @@
     <div class="app">
         <header class="header">
             <div class="header-left">
-                <h1 class="logo">TradingView Chart</h1>
+                <h1 class="logo">MT5 Trading</h1>
             </div>
             <div class="header-center">
                 <div class="symbol-selector">
@@ -32,6 +32,13 @@
         </header>
 
         <div class="toolbar">
+            <div class="toolbar-group">
+                <label>Data Source:</label>
+                <select id="dataSource">
+                    <option value="binance">Binance</option>
+                    <option value="mt5">MT5 WebTerminal</option>
+                </select>
+            </div>
             <div class="toolbar-group">
                 <label>Chart Type:</label>
                 <select id="chartType">
@@ -63,10 +70,64 @@
 
         <div class="main-content">
             <div class="chart-container">
-                <div id="chart" class="chart"></div>
+                <div id="binanceChart" class="chart"></div>
+                <div id="mt5Chart" class="mt5-iframe-container" style="display: none;">
+                    <iframe id="mt5iframe" src="" width="100%" height="100%" frameborder="0"></iframe>
+                </div>
                 <div id="loading" class="loading">
                     <div class="spinner"></div>
                     <p>Dang tai du lieu...</p>
+                </div>
+                <div id="priceTimeLabel" class="price-time-label" style="display: none;"></div>
+            </div>
+            <div class="chart-info">
+                <div class="info-panel">
+                    <div class="info-header">
+                        <span id="infoSymbol">BTCUSD</span>
+                        <span id="infoExchange">Binance</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Open:</span>
+                        <span id="infoOpen">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">High:</span>
+                        <span id="infoHigh">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Low:</span>
+                        <span id="infoLow">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Close:</span>
+                        <span id="infoClose">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Time:</span>
+                        <span id="infoTime">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Volume:</span>
+                        <span id="infoVolume">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Price:</span>
+                        <span id="priceValue">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Timeframe:</span>
+                        <span id="timeValue">--</span>
+                    </div>
+                </div>
+                <div class="countdown-panel">
+                    <div class="countdown-label">Next Candle</div>
+                    <div id="infoCountdown" class="countdown-value">--:--</div>
+                    <div id="countdownBar" class="countdown-bar"></div>
+                </div>
+                <div class="live-price-panel">
+                    <div id="livePriceLabel" class="live-label">Live Price</div>
+                    <div id="livePriceValue" class="live-value">--</div>
+                    <div id="liveCountdown" class="live-countdown">--</div>
                 </div>
             </div>
             <div class="sidebar">
